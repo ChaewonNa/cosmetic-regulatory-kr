@@ -1,0 +1,5 @@
+import { app,HttpRequest,HttpResponseInit,InvocationContext } from '@azure/functions';
+import { AccessError,requireActor } from '../shared/auth';
+import { query } from '../shared/db';
+export async function me(req:HttpRequest,ctx:InvocationContext):Promise<HttpResponseInit>{try{const a=await requireActor(req);const rows=await query<any>('select id,email,full_name,role::text as role,company_name,business_registration_number,job_title,phone,disabled,created_at,updated_at from public.app_users where id=$1',[a.id]);const p=rows[0];return{status:200,jsonBody:{id:p.id,email:p.email,fullName:p.full_name,role:p.role,companyName:p.company_name,businessRegistrationNumber:p.business_registration_number,jobTitle:p.job_title,phone:p.phone,disabled:p.disabled,createdAt:p.created_at,updatedAt:p.updated_at}}}catch(e){if(e instanceof AccessError)return{status:e.status,jsonBody:{error:e.message}};ctx.error(e);return{status:500,jsonBody:{error:'Unable to load profile'}}}}
+app.http('me',{methods:['GET'],authLevel:'anonymous',route:'me',handler:me});
