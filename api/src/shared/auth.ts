@@ -43,9 +43,12 @@ export async function requireActor(request:HttpRequest):Promise<AppActor>{
       `update public.app_users
           set email=$1,
               role=case when $2 then 'admin' else role end,
+              account_status=case when $2 then 'active' else account_status end,
+              identity_provider=coalesce(identity_provider,$4),
+              identity_subject=coalesce(identity_subject,$5),
               updated_at=now()
         where id=$3 returning *`,
-      [email,protectedAdmin,rows[0].id],
+      [email,protectedAdmin,rows[0].id,provider,p.userId],
     );
   }else{
     rows=await query<any>(
@@ -54,6 +57,7 @@ export async function requireActor(request:HttpRequest):Promise<AppActor>{
        on conflict(identity_provider,identity_subject) do update
          set email=excluded.email,
            role=case when excluded.email=any($5::text[]) then 'admin' else public.app_users.role end,
+           account_status=case when excluded.email=any($5::text[]) then 'active' else public.app_users.account_status end,
            updated_at=now()
        returning *`,
       [provider,p.userId,email,initialRole,Array.from(ADMIN_EMAILS),initialStatus],
