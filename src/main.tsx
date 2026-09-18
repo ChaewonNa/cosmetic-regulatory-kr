@@ -15,7 +15,7 @@ function App() {
         </div>
       </section>
     </main>
-  );
+  ); 
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
