@@ -1,0 +1,5 @@
+import { app,HttpRequest,HttpResponseInit,InvocationContext } from '@azure/functions';
+import { AccessError,requireActor } from '../shared/auth';
+import { query } from '../shared/db';
+export async function profile(req:HttpRequest,ctx:InvocationContext):Promise<HttpResponseInit>{try{const a=await requireActor(req);const b=await req.json() as any;const rows=await query<any>(`update public.app_users set full_name=coalesce($1,full_name),job_title=coalesce($2,job_title),phone=coalesce($3,phone),company_name=coalesce($4,company_name),business_registration_number=coalesce($5,business_registration_number),updated_at=now() where id=$6 returning id,email,full_name,role::text as role,company_name,business_registration_number,job_title,phone,disabled`,[b.fullName??null,b.jobTitle??null,b.phone??null,b.companyName??null,b.businessRegistrationNumber??null,a.id]);return{status:200,jsonBody:{data:rows[0]}}}catch(e){if(e instanceof AccessError)return{status:e.status,jsonBody:{error:e.message}};ctx.error(e);return{status:500,jsonBody:{error:'Unable to update profile'}}}}
+app.http('profile',{methods:['PATCH'],authLevel:'anonymous',route:'profile',handler:profile});
